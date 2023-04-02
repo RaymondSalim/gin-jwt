@@ -178,7 +178,7 @@ func TestGoJWT_VerifyConfig(t *testing.T) {
 				Config: tt.JWTConfig,
 			}
 
-			resp := g.verifyConfig()
+			resp := g.validateConfig()
 
 			if tt.assert != nil {
 				tt.assert(t, resp)
