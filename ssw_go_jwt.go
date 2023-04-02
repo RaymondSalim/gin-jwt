@@ -21,7 +21,7 @@ type SSWGoJWT interface {
 	ValidateAccessTokenWithClaims(signedToken string, target *jwt.MapClaims) error
 	RenewToken(signedTokens Tokens) (Tokens, error)
 
-	verifyConfig() error
+	validateConfig() error
 	getSigningKeyOrSecret(tokenType TokenType) interface{}
 	getKeyFunc(tokenType TokenType) func(token *jwt.Token) (interface{}, error)
 	generateToken(claims map[string]interface{}, expiresAt time.Time, signingKeyOrSecret interface{}) (string, error)
@@ -49,7 +49,7 @@ func NewGoJWT(config JWTConfig) SSWGoJWT {
 }
 
 func (g *sswGoJWT) Init() error {
-	err := g.verifyConfig()
+	err := g.validateConfig()
 	if err != nil {
 		return fmt.Errorf("[%T] init failed: %w", g, err)
 	}
@@ -110,7 +110,7 @@ func (g *sswGoJWT) Init() error {
 	return nil
 }
 
-func (g *sswGoJWT) verifyConfig() error {
+func (g *sswGoJWT) validateConfig() error {
 	cfg := g.Config
 
 	if cfg.SigningAlgorithm != SigningAlgorithmRS256 && cfg.SigningAlgorithm != SigningAlgorithmHS256 {
