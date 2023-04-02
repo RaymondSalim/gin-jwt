@@ -60,7 +60,6 @@ func (g *sswGoJWT) Init() error {
 		return fmt.Errorf("[%T] init failed: %w", g, err)
 	}
 
-	switch g.Config.SigningAlgorithm {
 	case SigningAlgorithmRS256:
 		g.signingMethod = jwt.SigningMethodRS256
 
