@@ -42,12 +42,18 @@ type sswGoJWT struct {
 	refreshTokenSecret []byte
 }
 
+// NewGoJWT returns interface SSWGoJWT.
+// The returned interface requires to be initialized by calling Init() before any other function.
 func NewGoJWT(config JWTConfig) SSWGoJWT {
 	return &sswGoJWT{
 		Config: config,
 	}
 }
 
+// Init validates the config passed at NewGoJWT.
+// After successful validation, Init will load necessary certificate files if required.
+//
+// Init returns four possible errors if validation fails; InvalidSigningAlgorithm, MissingSecret, MissingKeyFile, InvalidKeyFilePath
 func (g *sswGoJWT) Init() error {
 	err := g.validateConfig()
 	if err != nil {
@@ -203,6 +209,11 @@ func (g *sswGoJWT) generateToken(claims map[string]interface{}, expiresAt time.T
 	return signedToken, nil
 }
 
+// GenerateTokens generates both access and refresh token.
+// The expiry of the tokens depend on the JWTConfig.AccessTokenMaxAge and JWTConfig.RefreshTokenMaxAge value set in the config.
+// It is calculated by using adding time.Now and the max age.
+//
+// GenerateTokens returns ErrorNotInitialized if Init has not been called, else returns errors listed in the go-jwt package
 func (g *sswGoJWT) GenerateTokens(claims map[string]interface{}) (Tokens, error) {
 	var tokens Tokens
 	if !g.initialized {
@@ -225,6 +236,9 @@ func (g *sswGoJWT) GenerateTokens(claims map[string]interface{}) (Tokens, error)
 	return tokens, nil
 }
 
+// ValidateToken validates the given signedToken, using the key/secret provided at NewGoJWT, and using the TokenType passed in the second parameter.
+//
+// ValidateToken returns ErrorNotInitialized if Init has not been called, else returns errors listed in the go-jwt package
 func (g *sswGoJWT) ValidateToken(signedToken string, tokenType TokenType) error {
 	if !g.initialized {
 		return ErrorNotInitialized
@@ -239,6 +253,10 @@ func (g *sswGoJWT) ValidateToken(signedToken string, tokenType TokenType) error 
 	return nil
 }
 
+// ValidateAccessTokenWithClaims validates the given signedToken, using the key/secret provided at NewGoJWT.
+// The claims in the JWT Token will be written to the *jwt.MapClaims passed as the second parameter.
+//
+// ValidateAccessTokenWithClaims returns ErrorNotInitialized if Init has not been called, else returns errors listed in the go-jwt package
 func (g *sswGoJWT) ValidateAccessTokenWithClaims(signedToken string, target *jwt.MapClaims) error {
 	if !g.initialized {
 		return ErrorNotInitialized
@@ -261,6 +279,9 @@ func (g *sswGoJWT) ValidateAccessTokenWithClaims(signedToken string, target *jwt
 	return nil
 }
 
+// RenewToken renews the Tokens, as long as the tokens are valid, and the refresh token has not expired
+//
+// RenewToken returns ErrorNotInitialized if Init has not been called, ErrorRefreshTokenExpired if refresh token has expired, else returns errors listed in the go-jwt package
 func (g *sswGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
 	var tokens Tokens
 	if !g.initialized {
