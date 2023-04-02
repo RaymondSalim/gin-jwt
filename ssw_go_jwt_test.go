@@ -1133,13 +1133,13 @@ func TestGoJWT_ValidateToken(t *testing.T) {
 				}
 			},
 			assert: func(t *testing.T, err error) {
-				assert.ErrorIs(t, err, ErrorTokenExpired)
+				assert.ErrorIs(t, err, jwt.ErrTokenExpired)
 			},
 		},
 		{
 			name: "error_invalid_signature",
 			Params: Params{
-				signedToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxfQ.a",
+				signedToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxfQ.VvC_YHa4Zo7VqyeliJI2UNPyAo4gobgcTUQEuLBhmLA",
 				TokenType:   AccessToken,
 			},
 			modify: func(goJWT *sswGoJWT) {
@@ -1155,7 +1155,7 @@ func TestGoJWT_ValidateToken(t *testing.T) {
 				}
 			},
 			assert: func(t *testing.T, err error) {
-				assert.ErrorIs(t, err, ErrorUnauthorized)
+				assert.ErrorIs(t, err, jwt.ErrTokenSignatureInvalid)
 			},
 		},
 	}
@@ -1266,7 +1266,7 @@ func TestGoJWT_ValidateAccessTokenWithClaims(t *testing.T) {
 				}
 			},
 			assert: func(t *testing.T, claims jwt.MapClaims, err error) {
-				assert.ErrorIs(t, err, ErrorTokenExpired)
+				assert.ErrorIs(t, err, jwt.ErrTokenExpired)
 			},
 		},
 		{
@@ -1288,7 +1288,7 @@ func TestGoJWT_ValidateAccessTokenWithClaims(t *testing.T) {
 				}
 			},
 			assert: func(t *testing.T, claims jwt.MapClaims, err error) {
-				assert.ErrorIs(t, err, ErrorUnauthorized)
+				assert.ErrorIs(t, err, jwt.ErrTokenSignatureInvalid)
 			},
 		},
 	}
