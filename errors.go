@@ -10,10 +10,7 @@ var (
 	InvalidKeyFilePath      = errors.New("key file does not exist")
 )
 
-// Module Error
 var (
 	ErrorNotInitialized      = errors.New("module not initialized")
-	ErrorUnauthorized        = errors.New("unauthorized")
 	ErrorRefreshTokenExpired = errors.New("refresh token expired")
-	ErrorTokenExpired        = errors.New("token expired")
 )

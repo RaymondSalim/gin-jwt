@@ -232,15 +232,7 @@ func (g *sswGoJWT) ValidateToken(signedToken string, tokenType TokenType) error 
 
 	token, err := jwt.Parse(signedToken, g.getKeyFunc(tokenType))
 
-	if !token.Valid {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return ErrorTokenExpired
-		}
-		return ErrorUnauthorized
-	}
-
-	// Redundant, just in case
-	if err != nil {
+	if err != nil || !token.Valid {
 		return fmt.Errorf("[%T] validate token failed: %w", g, err)
 	}
 
@@ -255,15 +247,15 @@ func (g *sswGoJWT) ValidateAccessTokenWithClaims(signedToken string, target *jwt
 	token, err := jwt.ParseWithClaims(signedToken, &jwt.MapClaims{}, g.getKeyFunc(AccessToken))
 
 	if !token.Valid && !errors.Is(err, jwt.ErrTokenExpired) {
-		return ErrorUnauthorized
+		return err
 	}
 
 	if claims, ok := token.Claims.(*jwt.MapClaims); ok {
 		*target = *claims
 	}
 
-	if errors.Is(err, jwt.ErrTokenExpired) {
-		return ErrorTokenExpired
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -277,7 +269,7 @@ func (g *sswGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
 
 	err := g.ValidateToken(signedTokens.RefreshToken, RefreshToken)
 	if err != nil {
-		if errors.Is(err, ErrorTokenExpired) {
+		if errors.Is(err, jwt.ErrTokenExpired) {
 			return tokens, ErrorRefreshTokenExpired
 		}
 		return tokens, fmt.Errorf("[%T] renew token failed: %w", g, err)
@@ -286,7 +278,7 @@ func (g *sswGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
 	var claims jwt.MapClaims
 
 	err = g.ValidateAccessTokenWithClaims(signedTokens.AccessToken, &claims)
-	if err != nil && !errors.Is(err, ErrorTokenExpired) {
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
 		return tokens, fmt.Errorf("[%T] renew token failed: %w", g, err)
 	}
 
