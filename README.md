@@ -7,6 +7,10 @@ A **S**tupid **S**imple **W**rapper for [golang-jwt](https://github.com/golang-j
 Currently, only the RS256 and HS256 signing algorithm is supported.
 
 ## Usage
+First, install the module
+```shell
+go get github.com/RaymondSalim/ssw-go-jwt
+```
 ```go
 package example
 
