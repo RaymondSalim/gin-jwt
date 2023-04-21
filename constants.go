@@ -9,3 +9,10 @@ const (
 	AccessToken = iota
 	RefreshToken
 )
+
+type Mode int
+
+const (
+	ModeFull Mode = iota
+	ModeValidationOnly
+)
