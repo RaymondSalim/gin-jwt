@@ -123,36 +123,12 @@ func TestGoJWT_VerifyConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "fail_rs_256_no_access_token_private_key",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error) {
-				assert.ErrorIs(t, resp, MissingKeyFile)
-			},
-		},
-		{
 			name: "fail_rs_256_no_access_token_public_key",
 			JWTConfig: JWTConfig{
 				SigningAlgorithm:           SigningAlgorithmRS256,
 				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
 				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
 				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error) {
-				assert.ErrorIs(t, resp, MissingKeyFile)
-			},
-		},
-		{
-			name: "fail_rs_256_no_refresh_token_private_key",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:          SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:  accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile: accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile: refreshTokenPublicKeyFile,
 			},
 			assert: func(t *testing.T, resp error) {
 				assert.ErrorIs(t, resp, MissingKeyFile)
@@ -194,7 +170,7 @@ func TestGoJWT_Init(t *testing.T) {
 		assert func(t *testing.T, resp error, jwt *sswGoJWT)
 	}{
 		{
-			name: "success_rs256",
+			name: "success_rs256_mode_full",
 			JWTConfig: JWTConfig{
 				SigningAlgorithm:           SigningAlgorithmRS256,
 				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
@@ -211,6 +187,28 @@ func TestGoJWT_Init(t *testing.T) {
 				assert.NotNil(t, jwt.accessTokenVerifyKey)
 				assert.NotNil(t, jwt.refreshTokenSigningKey)
 				assert.NotNil(t, jwt.refreshTokenVerifyKey)
+
+				assert.EqualValues(t, ModeFull, jwt.mode)
+			},
+		},
+		{
+			name: "success_rs256_mode_validation_only",
+			JWTConfig: JWTConfig{
+				SigningAlgorithm:          SigningAlgorithmRS256,
+				AccessTokenPublicKeyFile:  accessTokenPublicKeyFile,
+				RefreshTokenPublicKeyFile: refreshTokenPublicKeyFile,
+			},
+			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
+				assert.NoError(t, resp)
+
+				assert.True(t, jwt.initialized)
+
+				assert.Nil(t, jwt.accessTokenSigningKey)
+				assert.NotNil(t, jwt.accessTokenVerifyKey)
+				assert.Nil(t, jwt.refreshTokenSigningKey)
+				assert.NotNil(t, jwt.refreshTokenVerifyKey)
+
+				assert.EqualValues(t, ModeValidationOnly, jwt.mode)
 			},
 		},
 		{
@@ -1000,6 +998,18 @@ func TestGoJWT_GenerateTokens(t *testing.T) {
 				assert.ErrorIs(t, err, ErrorNotInitialized)
 			},
 		},
+		{
+			name:      "error_mode_validation_only",
+			JWTConfig: JWTConfig{},
+			Params:    Params{},
+			modify: func(goJWT *sswGoJWT) {
+				goJWT.initialized = true
+				goJWT.mode = ModeValidationOnly
+			},
+			assert: func(t *testing.T, resp Tokens, err error) {
+				assert.ErrorIs(t, err, ErrorValidationOnly)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1540,6 +1550,27 @@ func TestGoJWT_RenewToken(t *testing.T) {
 			},
 			assert: func(t *testing.T, resp Tokens, err error) {
 				assert.Error(t, err)
+			},
+		},
+		{
+			name:      "error_not_initialized",
+			JWTConfig: JWTConfig{},
+			Params:    Params{},
+			modify:    func(goJWT *sswGoJWT) {},
+			assert: func(t *testing.T, resp Tokens, err error) {
+				assert.ErrorIs(t, err, ErrorNotInitialized)
+			},
+		},
+		{
+			name:      "error_mode_validation_only",
+			JWTConfig: JWTConfig{},
+			Params:    Params{},
+			modify: func(goJWT *sswGoJWT) {
+				goJWT.initialized = true
+				goJWT.mode = ModeValidationOnly
+			},
+			assert: func(t *testing.T, resp Tokens, err error) {
+				assert.ErrorIs(t, err, ErrorValidationOnly)
 			},
 		},
 	}
