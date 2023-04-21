@@ -13,4 +13,5 @@ var (
 var (
 	ErrorNotInitialized      = errors.New("module not initialized")
 	ErrorRefreshTokenExpired = errors.New("refresh token expired")
+	ErrorValidationOnly      = errors.New("ssw-go-jwt was initialized in validation only mode") // Raised if trying to generate tokens, even though private keys were not specified in the config during Init
 )
