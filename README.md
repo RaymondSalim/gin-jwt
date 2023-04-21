@@ -7,10 +7,14 @@ A **S**tupid **S**imple **W**rapper for [golang-jwt](https://github.com/golang-j
 Currently, only the RS256 and HS256 signing algorithm is supported.
 
 ## Usage
-First, install the module
+You can use this library in two different modes, validation-only mode or full mode. To use full mode, simply specify both private and public key files paths. To use validation-only mode, just specify the public key files paths.
+
+## Installation
 ```shell
 go get github.com/RaymondSalim/ssw-go-jwt
 ```
+
+## Code Example
 ```go
 package example
 
