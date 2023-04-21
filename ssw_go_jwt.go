@@ -31,6 +31,7 @@ type sswGoJWT struct {
 	Config JWTConfig
 
 	initialized   bool
+	mode          Mode
 	signingMethod jwt.SigningMethod
 
 	accessTokenSigningKey  *rsa.PrivateKey
@@ -63,14 +64,31 @@ func (g *sswGoJWT) Init() error {
 	switch g.Config.SigningAlgorithm {
 	case SigningAlgorithmRS256:
 		g.signingMethod = jwt.SigningMethodRS256
+		g.mode = ModeValidationOnly
 
-		atPrivateKeyData, err := os.ReadFile(g.Config.AccessTokenPrivateKeyFile)
-		if err != nil {
-			return InvalidKeyFilePath
-		}
-		atSignKey, err := jwt.ParseRSAPrivateKeyFromPEM(atPrivateKeyData)
-		if err != nil {
-			return fmt.Errorf("[%T] init failed: %w", g, err)
+		if g.Config.AccessTokenPrivateKeyFile != "" && g.Config.RefreshTokenPrivateKeyFile != "" {
+			g.mode = ModeFull
+
+			atPrivateKeyData, err := os.ReadFile(g.Config.AccessTokenPrivateKeyFile)
+			if err != nil {
+				return InvalidKeyFilePath
+			}
+			atSignKey, err := jwt.ParseRSAPrivateKeyFromPEM(atPrivateKeyData)
+			if err != nil {
+				return fmt.Errorf("[%T] init failed: %w", g, err)
+			}
+
+			rtPrivateKeyData, err := os.ReadFile(g.Config.RefreshTokenPrivateKeyFile)
+			if err != nil {
+				return InvalidKeyFilePath
+			}
+			rtSignKey, err := jwt.ParseRSAPrivateKeyFromPEM(rtPrivateKeyData)
+			if err != nil {
+				return fmt.Errorf("[%T] init failed: %w", g, err)
+			}
+
+			g.accessTokenSigningKey = atSignKey
+			g.refreshTokenSigningKey = rtSignKey
 		}
 
 		atPublicKeyData, err := os.ReadFile(g.Config.AccessTokenPublicKeyFile)
@@ -78,15 +96,6 @@ func (g *sswGoJWT) Init() error {
 			return InvalidKeyFilePath
 		}
 		atVerifyKey, err := jwt.ParseRSAPublicKeyFromPEM(atPublicKeyData)
-		if err != nil {
-			return fmt.Errorf("[%T] init failed: %w", g, err)
-		}
-
-		rtPrivateKeyData, err := os.ReadFile(g.Config.RefreshTokenPrivateKeyFile)
-		if err != nil {
-			return InvalidKeyFilePath
-		}
-		rtSignKey, err := jwt.ParseRSAPrivateKeyFromPEM(rtPrivateKeyData)
 		if err != nil {
 			return fmt.Errorf("[%T] init failed: %w", g, err)
 		}
@@ -100,10 +109,7 @@ func (g *sswGoJWT) Init() error {
 			return fmt.Errorf("[%T] init failed: %w", g, err)
 		}
 
-		g.accessTokenSigningKey = atSignKey
 		g.accessTokenVerifyKey = atVerifyKey
-
-		g.refreshTokenSigningKey = rtSignKey
 		g.refreshTokenVerifyKey = rtVerifyKey
 
 	case SigningAlgorithmHS256:
@@ -130,10 +136,7 @@ func (g *sswGoJWT) validateConfig() error {
 	}
 
 	if cfg.SigningAlgorithm == SigningAlgorithmRS256 {
-		if cfg.AccessTokenPrivateKeyFile == "" ||
-			cfg.AccessTokenPublicKeyFile == "" ||
-			cfg.RefreshTokenPrivateKeyFile == "" ||
-			cfg.RefreshTokenPublicKeyFile == "" {
+		if cfg.AccessTokenPublicKeyFile == "" || cfg.RefreshTokenPublicKeyFile == "" {
 			return MissingKeyFile
 		}
 	}
@@ -219,6 +222,9 @@ func (g *sswGoJWT) GenerateTokens(claims map[string]interface{}) (Tokens, error)
 	if !g.initialized {
 		return tokens, ErrorNotInitialized
 	}
+	if g.mode == ModeValidationOnly {
+		return tokens, ErrorValidationOnly
+	}
 
 	accessToken, err := g.generateToken(claims, timeNow().Add(time.Second*time.Duration(g.Config.AccessTokenMaxAge)), g.getSigningKeyOrSecret(AccessToken))
 	if err != nil {
@@ -286,6 +292,9 @@ func (g *sswGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
 	var tokens Tokens
 	if !g.initialized {
 		return tokens, ErrorNotInitialized
+	}
+	if g.mode == ModeValidationOnly {
+		return tokens, ErrorValidationOnly
 	}
 
 	err := g.ValidateToken(signedTokens.RefreshToken, RefreshToken)
