@@ -1,5 +1,7 @@
 package ssw_go_jwt
 
+//go:generate mockgen -source=ssw_go_jwt.go -destination=mocks/ssw_go_jwt.go
+
 import (
 	"crypto/rsa"
 	"errors"
