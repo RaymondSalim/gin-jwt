@@ -1,6 +1,6 @@
 package ssw_go_jwt
 
-//go:generate mockery --name SSWGoJWT
+//go:generate mockery --name SSWGoJWT --filename ssw_go_jwt_mock.go --inpackage
 
 import (
 	"crypto/rsa"
