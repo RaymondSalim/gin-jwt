@@ -52,23 +52,23 @@ func (_m *MockSSWGoJWT) Init() error {
 	return r0
 }
 
-// RenewToken provides a mock function with given fields: signedTokens
-func (_m *MockSSWGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
-	ret := _m.Called(signedTokens)
+// RenewToken provides a mock function with given fields: refreshToken, newAccessTokenClaims
+func (_m *MockSSWGoJWT) RenewToken(refreshToken string, newAccessTokenClaims map[string]interface{}) (Tokens, error) {
+	ret := _m.Called(refreshToken, newAccessTokenClaims)
 
 	var r0 Tokens
 	var r1 error
-	if rf, ok := ret.Get(0).(func(Tokens) (Tokens, error)); ok {
-		return rf(signedTokens)
+	if rf, ok := ret.Get(0).(func(string, map[string]interface{}) (Tokens, error)); ok {
+		return rf(refreshToken, newAccessTokenClaims)
 	}
-	if rf, ok := ret.Get(0).(func(Tokens) Tokens); ok {
-		r0 = rf(signedTokens)
+	if rf, ok := ret.Get(0).(func(string, map[string]interface{}) Tokens); ok {
+		r0 = rf(refreshToken, newAccessTokenClaims)
 	} else {
 		r0 = ret.Get(0).(Tokens)
 	}
 
-	if rf, ok := ret.Get(1).(func(Tokens) error); ok {
-		r1 = rf(signedTokens)
+	if rf, ok := ret.Get(1).(func(string, map[string]interface{}) error); ok {
+		r1 = rf(refreshToken, newAccessTokenClaims)
 	} else {
 		r1 = ret.Error(1)
 	}
