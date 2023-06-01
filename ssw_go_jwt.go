@@ -21,7 +21,7 @@ type SSWGoJWT interface {
 	GenerateTokens(claims map[string]interface{}) (Tokens, error)
 	ValidateToken(signedToken string, tokenType TokenType) error
 	ValidateAccessTokenWithClaims(signedToken string, target *jwt.MapClaims) error
-	RenewToken(signedTokens Tokens) (Tokens, error)
+	RenewToken(refreshToken string, newAccessTokenClaims map[string]interface{}) (Tokens, error)
 
 	validateConfig() error
 	getSigningKeyOrSecret(tokenType TokenType) interface{}
@@ -290,7 +290,7 @@ func (g *sswGoJWT) ValidateAccessTokenWithClaims(signedToken string, target *jwt
 // RenewToken renews the Tokens, as long as the tokens are valid, and the refresh token has not expired
 //
 // RenewToken returns ErrorNotInitialized if Init has not been called, ErrorRefreshTokenExpired if refresh token has expired, else returns errors listed in the go-jwt package
-func (g *sswGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
+func (g *sswGoJWT) RenewToken(refreshToken string, newAccessTokenClaims map[string]interface{}) (Tokens, error) {
 	var tokens Tokens
 	if !g.initialized {
 		return tokens, ErrorNotInitialized
@@ -299,7 +299,7 @@ func (g *sswGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
 		return tokens, ErrorValidationOnly
 	}
 
-	err := g.ValidateToken(signedTokens.RefreshToken, RefreshToken)
+	err := g.ValidateToken(refreshToken, RefreshToken)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return tokens, ErrorRefreshTokenExpired
@@ -307,12 +307,5 @@ func (g *sswGoJWT) RenewToken(signedTokens Tokens) (Tokens, error) {
 		return tokens, fmt.Errorf("[%T] renew token failed: %w", g, err)
 	}
 
-	var claims jwt.MapClaims
-
-	err = g.ValidateAccessTokenWithClaims(signedTokens.AccessToken, &claims)
-	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
-		return tokens, fmt.Errorf("[%T] renew token failed: %w", g, err)
-	}
-
-	return g.GenerateTokens(claims)
+	return g.GenerateTokens(newAccessTokenClaims)
 }
