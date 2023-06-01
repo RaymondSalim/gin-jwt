@@ -1327,8 +1327,12 @@ func TestGoJWT_RenewToken(t *testing.T) {
 		timeNow = time.Now
 	})
 
+	claim := jwt.MapClaims{
+		testString: testString,
+	}
+
 	type Params struct {
-		signedTokens Tokens
+		refreshToken string
 	}
 	tests := []struct {
 		name string
@@ -1345,10 +1349,7 @@ func TestGoJWT_RenewToken(t *testing.T) {
 				RefreshTokenMaxAge: 50000,
 			},
 			Params: Params{
-				signedTokens: Tokens{
-					AccessToken:  "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6MTY4MDM3MjUwMSwidXNlciI6InZlcnkgbmljZSJ9.u3OPU_zXSh4Rrlp2OAOnTPOroNgh6T5SI1ylfPKtBrujkIxL8WeXwSh2kbWk5FiPyZ9vTgsZZqnJZgb_iVFmQVdnCmE7hHsstaXAXN7GCTf3yXD-KYXlAjxDmkQfQngLhHTtpoN-4FCbScXtV_nmgHaDGNjvmcY3tFy997tqUlNG890LRhxDAfrtHCrW-3xdArfTLzzsdtj1-Co-cl1eyNURCtl9aBD5o1XB9Dzd6OCVhrLKsUzDL4YaR_q1-rHbQ4LvMChZ6nkmhMOdF3HSifR7qGeJa4caPGF5dyFyV4g5lZqGtiJ4WcQPwVMOad5ILb2ObxwvOU8vG0nAoF6f4mwZywIgXpFPphRklWy20MIOEukGC7wo6duHyGWmSRWM5Kli2PhjlMuJN2JaAuhiz_c8l5Prb6o6BLJ0r1Ucd0eq-1Z50-5PA2Y3wO1TPviS_R5EqUzQek7-zQ-YHYUaDBvN6oO-RsGvzmQHgpp9X0nOboQ_9npQIPHr--_wXE7HIJaLI6AQAQtZbW0gjOGDI7WFUQt3TkJ7S09x2XdN1qoxmHnhtsGNv_wUvgD_yrIl_KPyNBH_X7gIRiPORm0vTLv39Z_3FPHJqEE0xE_vngQKYCyv6yoNQo3HOcScxMoq9eoD4rBGurBSZbaahg4agvXID2mkpVfGwL-v3GgynFY",
-					RefreshToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6NTAxNjgwMzMyNTAxfQ.ZWktdVIzRrmoR3USoqvt0BRegzVNJC1yAI520bfr18jSI6z4etOdTliKboXZQw6d_Ypk0BI7rLTcmQyLhcHeH8xiLm5S6InIiqgKQpQjQc3PuL-v2wcI5THxgoWLX0dax_S5IpaNbX_LXWrXwi16_eeY2M8FQ7Ir4nRcu67rML7SCR_HocL3gBW-yjCSymMfEWLA6vAW0dOQnyLuJiXyaqtEclKnM5gHc-uz7G2wHd73W9wiLAaKpgUK_v9dFEWdsj_bDpkX0NA4DqIilZdooi6nbkhb0PWeepkiTCWXf54Nyq5NLHr1bcqrLs8nRbwrnIp-jW_5gJZ3BdV5gVbysC0G1WEmC85TK6goMb1oHfpbgDaIMk6bcBIt7f7rxTXcvsE3Y_JtjYHjezDcLlYhYCohoobBlS8Tuc1Fg2uJfTNh5mqvgRI86vWU8hcGWkFQcmtJ20LVPBqE0dSTzd1KaQJyjs1RWo-7bdRM6A7WqLPXWRkYzRdW27zJe2RPWl9_i12GWct6bqE0yi0rta1RmLWH9SQJ49L8ndYW1D1sfM-KUSL2Rz_nRLukh0CxQVOz3RPp6P_EQd5w-6gUrNZZmQbJD-ZMvIOahHzTqJ8tLzJA-CYG75vJ52E-C_9in847fVWXu8RllrbiDZAu00iF9MKENo3MWPKJOhfKtCc9LYo",
-				},
+				refreshToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6NTAxNjgwMzMyNTAxfQ.ZWktdVIzRrmoR3USoqvt0BRegzVNJC1yAI520bfr18jSI6z4etOdTliKboXZQw6d_Ypk0BI7rLTcmQyLhcHeH8xiLm5S6InIiqgKQpQjQc3PuL-v2wcI5THxgoWLX0dax_S5IpaNbX_LXWrXwi16_eeY2M8FQ7Ir4nRcu67rML7SCR_HocL3gBW-yjCSymMfEWLA6vAW0dOQnyLuJiXyaqtEclKnM5gHc-uz7G2wHd73W9wiLAaKpgUK_v9dFEWdsj_bDpkX0NA4DqIilZdooi6nbkhb0PWeepkiTCWXf54Nyq5NLHr1bcqrLs8nRbwrnIp-jW_5gJZ3BdV5gVbysC0G1WEmC85TK6goMb1oHfpbgDaIMk6bcBIt7f7rxTXcvsE3Y_JtjYHjezDcLlYhYCohoobBlS8Tuc1Fg2uJfTNh5mqvgRI86vWU8hcGWkFQcmtJ20LVPBqE0dSTzd1KaQJyjs1RWo-7bdRM6A7WqLPXWRkYzRdW27zJe2RPWl9_i12GWct6bqE0yi0rta1RmLWH9SQJ49L8ndYW1D1sfM-KUSL2Rz_nRLukh0CxQVOz3RPp6P_EQd5w-6gUrNZZmQbJD-ZMvIOahHzTqJ8tLzJA-CYG75vJ52E-C_9in847fVWXu8RllrbiDZAu00iF9MKENo3MWPKJOhfKtCc9LYo",
 			},
 			modify: func(goJWT *sswGoJWT) {
 				goJWT.initialized = true
@@ -1442,7 +1443,7 @@ func TestGoJWT_RenewToken(t *testing.T) {
 				}
 			},
 			assert: func(t *testing.T, resp Tokens, err error) {
-				const expectedAccessToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAyODM0MDEsImlhdCI6MTY4MDI4MjUwMSwiaXNzIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIiwidXNlciI6InZlcnkgbmljZSJ9.g6r5mZHRnrOmzTZ9gsWDyi5xH2OODCmyNKoY_MeidNLJxBNnczRhe4CLUSC_DT6_J6_Kf_nLka_PqB1GbHYr-e8J6oRrYaMm1QbF8OU38PQA0kvTsvFCLVOWQ-kDKuya7632Pu2czPDY4SvWIFdQ2wQxLk-Ac8EOo9Tjr1tWs_Dk05fDOdKqTPrA2qM3heUZ-nLCwlzbrTU7E2QCx7Kypec4qDo5Ue7TCJe53XA7EMe5LcqyQzfQ9kGt256mVcGeNM9MRMZDOJLncdyn2JETcR2Y7jIKWh7RBAA4W7vfYeZ-6isKPmyHC3foPMVP3F4JiwyazFsvVjUZwhSCDYY6QOavZ4ZhxkUILBi8br6xxORDoscg_EYGhJ7R2v7LTIxompHMsROj9VGpNktnkCJ-vdYY3tseywHcCSQUIxcjDrI6ZE-U4Pct2wRAmBrEXMtasNPD1aWQhVUcG7F0-i0Fr4Kd6zQ8QH87Sm3mUJR4cM20zqwKEPakEx-U-CujMKokVxnbH1UQoX2tzbkyioWVyc65xBYQnRRN4hwTbrde59voWxpOGu73KDlw5NvsZZ0f3oDGzvq-H179cDqMXcN8GvMCIX4nfh_iyN1ycNeJVblB5JdAjvR3vLW3ymjm8ESYaA9-x45hqEjsqNSrRJSGENf2T37DvbYjQ4zcNBck-vo"
+				const expectedAccessToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAyODM0MDEsImlhdCI6MTY4MDI4MjUwMSwiaXNzIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIiwidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIn0.S0ENi2GvTZrZuGSsTxLL5kHtpxjMRbc3GchwgVaogCTUKRpuF0Fj9ghFEQxd8xwzL08-KbFh0nhfyhhn7Lw9vSUuElKR5_ZXlcsRRK8-4BlZjHOBvAYJ3_WrTTognqAbNhjigz1CJVIirFHcOqqERX4EWTehGovlHq1O7FHvP2WCoPkmXfR8BU2sENBqIHr7huZjaglx6xb8AbqOrSYVwUM6dgJxdHUyjp_77_yPBlbzBCqpoQVUDwSNyEUc_H5_ECmm3HtK0apgml3a_ofRDSagTJRR1bBnKIBuJnMKejNAieHhfgsLR6kIkImmfNcj8x1uu1nS6qdS1uZNpCvHM7FGZghThAJqXvuwcjPdHGdMJtq8_hS4JfY5rxrSFPwpKSqVIot0zGdmGVDRcNMSi34rIoF6PN1Mj3C5xKkjG5dW8b8TMQUo3qxrtKPfhWp09gB2u_6LZfy0Jz6-ggiLyu9vhtFGH_3cfgres-cbsauKAz_IquHpVKUuM139saHzBgqn6Kz7pQ5LoE3oNucDh_Nc9pi2fzTeGfjT3c-PmlIFVwVv1NJ5lzt-R9nCxbHj9LQbtUS-s7I_Bwo6my7r1oLrBAqz3kIVDDmI4_e-iK8aRX-msSJJ2F3E6HXA13rbNDoH_6AlL7P4bOZhreyLXqrDDwL3zk33hwuIL3VD47o"
 				const expectedRefreshToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzMzI1MDEsImlhdCI6MTY4MDI4MjUwMSwiaXNzIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIn0.P3SmXd2-RNLEqs7FnxcVNfCGw_HPcJIyKf_GuMqHwsTxUGPrdeQFvOVOtxAEHCL3g9iPJXput4QjmogZY0Fz80LwNiJbIpcWCvc-T3QpKDY3XpUF44omh5nrthkRBPMVIhbhmnduijfEaA62iddQ4GvKlPkSvoUAo21nm1QMwJGhPijnwBrxluoQgppFY_qm-1qzQhOfPhjaIPqJjT6SJcB-xfu3Nkaxrtix3_fNBVhueClxZmRoiwe9ZEj7fsfcdGYdXffDti2OCsN849kkKCncyrodRJnjYeumJdw-Yh7gfeFRV42NQfqElpUbpe03zneUKSrQ9n4O3BLmqTfsjRKDgLeMOyAf6gCHRikS2Kt1STMmlNQaXb7vOmO62c3jBsauYIi7Dau3ff467EN22Eph3QDIgAYuNf3uMEqHNtbspB_CaFf2bKVUuPBS-kOSZn7cnJu0cXUMKIjQ_MpkdD2xh_nl-lswi3PTiriRNvj9dynZjfTNwFMyWyW0FOTiXVliEnhuPmocXStK-3SWw7EmetTavLuOdKgQOycWztK4N1ZGqE5TsVA6UtU9Rm7CPfbs5hZjHhckl5tTQ8NKVLe2Rkr7MUg20wJJZm6wRLZBCL4z5IzFllee4y3dOVhpTHmwRJVt9vSHjhsfTLnBtqBl41sYm8n0d2-IyIqYqoA"
 
 				assert.EqualValues(t, expectedAccessToken, resp.AccessToken)
@@ -1458,10 +1459,7 @@ func TestGoJWT_RenewToken(t *testing.T) {
 				RefreshTokenMaxAge: 50000,
 			},
 			Params: Params{
-				signedTokens: Tokens{
-					AccessToken:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6MTY4MDM3MjUwMSwidXNlciI6InZlcnkgbmljZSJ9.JnD285nGorU-u4Z3euQbWt4uj0V9v75JeUpzfnN9xRA",
-					RefreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6NTAxNjgwMzMyNTAxfQ.acf7YW0rmuMKPDCXoYtYPb5hWMtAraYVw3nzfjaBJu8",
-				},
+				refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6NTAxNjgwMzMyNTAxfQ.acf7YW0rmuMKPDCXoYtYPb5hWMtAraYVw3nzfjaBJu8",
 			},
 			modify: func(goJWT *sswGoJWT) {
 				goJWT.initialized = true
@@ -1472,7 +1470,7 @@ func TestGoJWT_RenewToken(t *testing.T) {
 
 			},
 			assert: func(t *testing.T, resp Tokens, err error) {
-				const expectedAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAyODM0MDEsImlhdCI6MTY4MDI4MjUwMSwiaXNzIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIiwidXNlciI6InZlcnkgbmljZSJ9.aGII4sMtp9_0a0vxUkVvC8KPrVxYZsSy5hOaQIk5WDU"
+				const expectedAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAyODM0MDEsImlhdCI6MTY4MDI4MjUwMSwiaXNzIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIiwidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIn0.REsbzdKaK8CIhQl0Zz3JVYdbdkFRZAOnVR_PYDbiwKU"
 				const expectedRefreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzMzI1MDEsImlhdCI6MTY4MDI4MjUwMSwiaXNzIjoidGhpcyBpcyBhIHRlc3Qgc3RyaW5nIn0.cA-P1MX8wciqOsGs3r4U1uI06PEyY4y_Wn2uA3cYs_c"
 
 				assert.EqualValues(t, expectedAccessToken, resp.AccessToken)
@@ -1488,10 +1486,7 @@ func TestGoJWT_RenewToken(t *testing.T) {
 				RefreshTokenMaxAge: 50000,
 			},
 			Params: Params{
-				signedTokens: Tokens{
-					AccessToken:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6MTY4MDM3MjUwMSwidXNlciI6InZlcnkgbmljZSJ9.JnD285nGorU-u4Z3euQbWt4uj0V9v75JeUpzfnN9xRA",
-					RefreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6MX0.fi2iFwKZmpIK8RsNwK1_G0YmhBa85b8j44perxzhLB4",
-				},
+				refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6MX0.fi2iFwKZmpIK8RsNwK1_G0YmhBa85b8j44perxzhLB4",
 			},
 			modify: func(goJWT *sswGoJWT) {
 				goJWT.initialized = true
@@ -1506,30 +1501,6 @@ func TestGoJWT_RenewToken(t *testing.T) {
 			},
 		},
 		{
-			name: "error_hs256_invalid_signature_access_token",
-			JWTConfig: JWTConfig{
-				Issuer:             testString,
-				AccessTokenMaxAge:  900,
-				RefreshTokenMaxAge: 50000,
-			},
-			Params: Params{
-				signedTokens: Tokens{
-					AccessToken:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6MTY4MDM3MjUwMSwidXNlciI6InZlcnkgbmljZSJ9.JnD285nGorU-u4Z3euQbWt4uj0V9v75JeUpzfnN9xRA",
-					RefreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6NTAxNjgwMzMyNTAxfQ.acf7YW0rmuMKPDCXoYtYPb5hWMtAraYVw3nzfjaBJu8",
-				},
-			},
-			modify: func(goJWT *sswGoJWT) {
-				goJWT.initialized = true
-				goJWT.signingMethod = jwt.SigningMethodHS256
-
-				goJWT.refreshTokenSecret = []byte(secret)
-
-			},
-			assert: func(t *testing.T, resp Tokens, err error) {
-				assert.Error(t, err)
-			},
-		},
-		{
 			name: "error_hs256_invalid_signature_refresh_token",
 			JWTConfig: JWTConfig{
 				Issuer:             testString,
@@ -1537,10 +1508,7 @@ func TestGoJWT_RenewToken(t *testing.T) {
 				RefreshTokenMaxAge: 50000,
 			},
 			Params: Params{
-				signedTokens: Tokens{
-					AccessToken:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6MTY4MDM3MjUwMSwidXNlciI6InZlcnkgbmljZSJ9.JnD285nGorU-u4Z3euQbWt4uj0V9v75JeUpzfnN9xRA",
-					RefreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6NTAxNjgwMzMyNTAxfQ.acf7YW0rmuMKPDCXoYtYPb5hWMtAraYVw3nzfjaBJu8",
-				},
+				refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0aGlzIGlzIGEgdGVzdCBzdHJpbmciLCJpYXQiOjE2ODAyODI1MDEsImV4cCI6NTAxNjgwMzMyNTAxfQ.acf7YW0rmuMKPDCXoYtYPb5hWMtAraYVw3nzfjaBJu8",
 			},
 			modify: func(goJWT *sswGoJWT) {
 				goJWT.initialized = true
@@ -1585,7 +1553,7 @@ func TestGoJWT_RenewToken(t *testing.T) {
 				tt.modify(g)
 			}
 
-			resp, err := g.RenewToken(tt.Params.signedTokens)
+			resp, err := g.RenewToken(tt.Params.refreshToken, claim)
 
 			tt.assert(t, resp, err)
 		})
