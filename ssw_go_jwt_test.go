@@ -28,6 +28,17 @@ var testClaims = map[string]interface{}{
 
 var testTime = time.Unix(1680282501, 0)
 
+var keys, _ = LoadKeysFromFile(KeyFilePaths{
+	AccessToken: TokenKeysPath{
+		PrivateKeyPath: accessTokenPrivateKeyFile,
+		PublicKeyPath:  accessTokenPublicKeyFile,
+	},
+	RefreshToken: TokenKeysPath{
+		PrivateKeyPath: refreshTokenPrivateKeyFile,
+		PublicKeyPath:  refreshTokenPublicKeyFile,
+	},
+})
+
 func TestGoJWT_NewGoJWT(t *testing.T) {
 	test := struct {
 		name string
@@ -36,16 +47,12 @@ func TestGoJWT_NewGoJWT(t *testing.T) {
 	}{
 		name: "success",
 		JWTConfig: JWTConfig{
-			SigningAlgorithm:           testString,
-			AccessTokenPrivateKeyFile:  testString,
-			AccessTokenPublicKeyFile:   testString,
-			RefreshTokenPrivateKeyFile: testString,
-			RefreshTokenPublicKeyFile:  testString,
-			AccessTokenMaxAge:          testInt,
-			RefreshTokenMaxAge:         testInt,
-			Issuer:                     testString,
-			AccessTokenSecret:          testString,
-			RefreshTokenSecret:         testString,
+			SigningAlgorithm:   testString,
+			AccessTokenMaxAge:  testInt,
+			RefreshTokenMaxAge: testInt,
+			Issuer:             testString,
+			AccessTokenSecret:  testString,
+			RefreshTokenSecret: testString,
 		},
 		assert: func(t *testing.T, resp SSWGoJWT, expected SSWGoJWT) {
 			assert.Equal(t, expected, resp)
@@ -64,6 +71,12 @@ func TestGoJWT_NewGoJWT(t *testing.T) {
 }
 
 func TestGoJWT_VerifyConfig(t *testing.T) {
+	k1 := keys
+	k2 := keys
+
+	k1.AccessToken.PublicKey = nil
+	k2.RefreshToken.PublicKey = nil
+
 	tests := []struct {
 		name string
 		JWTConfig
@@ -72,12 +85,10 @@ func TestGoJWT_VerifyConfig(t *testing.T) {
 		{
 			name: "success_rs256",
 			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
+				SigningAlgorithm: SigningAlgorithmRS256,
+				Keys:             keys,
 			},
+
 			assert: func(t *testing.T, resp error) {
 				assert.NoError(t, resp)
 			},
@@ -125,10 +136,8 @@ func TestGoJWT_VerifyConfig(t *testing.T) {
 		{
 			name: "fail_rs_256_no_access_token_public_key",
 			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
+				SigningAlgorithm: SigningAlgorithmRS256,
+				Keys:             k1,
 			},
 			assert: func(t *testing.T, resp error) {
 				assert.ErrorIs(t, resp, MissingKeyFile)
@@ -137,10 +146,8 @@ func TestGoJWT_VerifyConfig(t *testing.T) {
 		{
 			name: "fail_rs_256_no_refresh_token_public_key",
 			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
+				SigningAlgorithm: SigningAlgorithmRS256,
+				Keys:             k2,
 			},
 			assert: func(t *testing.T, resp error) {
 				assert.ErrorIs(t, resp, MissingKeyFile)
@@ -164,6 +171,13 @@ func TestGoJWT_VerifyConfig(t *testing.T) {
 }
 
 func TestGoJWT_Init(t *testing.T) {
+	k1 := keys
+	k1.AccessToken.PrivateKey = nil
+	k1.RefreshToken.PrivateKey = nil
+
+	k2 := keys
+	k2.AccessToken.PrivateKey = nil
+
 	tests := []struct {
 		name string
 		JWTConfig
@@ -172,11 +186,8 @@ func TestGoJWT_Init(t *testing.T) {
 		{
 			name: "success_rs256_mode_full",
 			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
+				SigningAlgorithm: SigningAlgorithmRS256,
+				Keys:             keys,
 			},
 			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
 				assert.NoError(t, resp)
@@ -194,9 +205,8 @@ func TestGoJWT_Init(t *testing.T) {
 		{
 			name: "success_rs256_mode_validation_only",
 			JWTConfig: JWTConfig{
-				SigningAlgorithm:          SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:  accessTokenPublicKeyFile,
-				RefreshTokenPublicKeyFile: refreshTokenPublicKeyFile,
+				SigningAlgorithm: SigningAlgorithmRS256,
+				Keys:             k1,
 			},
 			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
 				assert.NoError(t, resp)
@@ -234,126 +244,6 @@ func TestGoJWT_Init(t *testing.T) {
 			},
 			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
 				assert.Error(t, resp)
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_access_token_private_key_path",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  testString,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorIs(t, resp, InvalidKeyFilePath)
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_access_token_validate_key_path",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   testString,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorIs(t, resp, InvalidKeyFilePath)
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_refresh_token_private_key_path",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: testString,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorIs(t, resp, InvalidKeyFilePath)
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_refresh_token_public_key_path",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  testString,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorIs(t, resp, InvalidKeyFilePath)
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_access_token_private_key_file",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  goModFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorContains(t, resp, "init failed")
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_access_token_validate_key_file",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   goModFile,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorContains(t, resp, "init failed")
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_refresh_token_private_key_file",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  refreshTokenPublicKeyFile,
-				RefreshTokenPrivateKeyFile: goModFile,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorContains(t, resp, "init failed")
-
-				assert.False(t, jwt.initialized)
-			},
-		},
-		{
-			name: "error_rs_256_invalid_refresh_token_public_key_file",
-			JWTConfig: JWTConfig{
-				SigningAlgorithm:           SigningAlgorithmRS256,
-				AccessTokenPublicKeyFile:   accessTokenPublicKeyFile,
-				AccessTokenPrivateKeyFile:  accessTokenPrivateKeyFile,
-				RefreshTokenPublicKeyFile:  goModFile,
-				RefreshTokenPrivateKeyFile: refreshTokenPrivateKeyFile,
-			},
-			assert: func(t *testing.T, resp error, jwt *sswGoJWT) {
-				assert.ErrorContains(t, resp, "init failed")
 
 				assert.False(t, jwt.initialized)
 			},
