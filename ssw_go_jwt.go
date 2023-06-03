@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
-	"os"
 	"time"
 )
 
@@ -68,51 +67,15 @@ func (g *sswGoJWT) Init() error {
 		g.signingMethod = jwt.SigningMethodRS256
 		g.mode = ModeValidationOnly
 
-		if g.Config.AccessTokenPrivateKeyFile != "" && g.Config.RefreshTokenPrivateKeyFile != "" {
+		if g.Config.Keys.AccessToken.PrivateKey != nil && g.Config.Keys.RefreshToken.PrivateKey != nil {
 			g.mode = ModeFull
 
-			atPrivateKeyData, err := os.ReadFile(g.Config.AccessTokenPrivateKeyFile)
-			if err != nil {
-				return InvalidKeyFilePath
-			}
-			atSignKey, err := jwt.ParseRSAPrivateKeyFromPEM(atPrivateKeyData)
-			if err != nil {
-				return fmt.Errorf("[%T] init failed: %w", g, err)
-			}
-
-			rtPrivateKeyData, err := os.ReadFile(g.Config.RefreshTokenPrivateKeyFile)
-			if err != nil {
-				return InvalidKeyFilePath
-			}
-			rtSignKey, err := jwt.ParseRSAPrivateKeyFromPEM(rtPrivateKeyData)
-			if err != nil {
-				return fmt.Errorf("[%T] init failed: %w", g, err)
-			}
-
-			g.accessTokenSigningKey = atSignKey
-			g.refreshTokenSigningKey = rtSignKey
+			g.accessTokenSigningKey = g.Config.Keys.AccessToken.PrivateKey
+			g.refreshTokenSigningKey = g.Config.Keys.RefreshToken.PrivateKey
 		}
 
-		atPublicKeyData, err := os.ReadFile(g.Config.AccessTokenPublicKeyFile)
-		if err != nil {
-			return InvalidKeyFilePath
-		}
-		atVerifyKey, err := jwt.ParseRSAPublicKeyFromPEM(atPublicKeyData)
-		if err != nil {
-			return fmt.Errorf("[%T] init failed: %w", g, err)
-		}
-
-		rtPublicKeyData, err := os.ReadFile(g.Config.RefreshTokenPublicKeyFile)
-		if err != nil {
-			return InvalidKeyFilePath
-		}
-		rtVerifyKey, err := jwt.ParseRSAPublicKeyFromPEM(rtPublicKeyData)
-		if err != nil {
-			return fmt.Errorf("[%T] init failed: %w", g, err)
-		}
-
-		g.accessTokenVerifyKey = atVerifyKey
-		g.refreshTokenVerifyKey = rtVerifyKey
+		g.accessTokenVerifyKey = g.Config.Keys.AccessToken.PublicKey
+		g.refreshTokenVerifyKey = g.Config.Keys.RefreshToken.PublicKey
 
 	case SigningAlgorithmHS256:
 		g.signingMethod = jwt.SigningMethodHS256
@@ -138,7 +101,7 @@ func (g *sswGoJWT) validateConfig() error {
 	}
 
 	if cfg.SigningAlgorithm == SigningAlgorithmRS256 {
-		if cfg.AccessTokenPublicKeyFile == "" || cfg.RefreshTokenPublicKeyFile == "" {
+		if cfg.Keys.AccessToken.PublicKey == nil || cfg.Keys.RefreshToken.PublicKey == nil {
 			return MissingKeyFile
 		}
 	}
