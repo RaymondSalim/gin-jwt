@@ -17,6 +17,16 @@ type KeyFilePaths struct {
 	RefreshToken TokenKeysPath
 }
 
+type TokenKeysString struct {
+	PrivateKeyString string
+	PublicKeyString  string
+}
+
+type KeyStrings struct {
+	AccessToken  TokenKeysString
+	RefreshToken TokenKeysString
+}
+
 type TokenKeys struct {
 	*rsa.PrivateKey
 	*rsa.PublicKey
@@ -71,6 +81,43 @@ func LoadKeysFromFile(p KeyFilePaths) (Keys, error) {
 			return keys, InvalidKeyFilePath
 		}
 		rtSignKey, err := jwt.ParseRSAPublicKeyFromPEM(rtPublicKeyData)
+		if err != nil {
+			return keys, fmt.Errorf("parse RSAPublicKey failed with error: %w", err)
+		}
+		keys.RefreshToken.PublicKey = rtSignKey
+	}
+
+	return keys, nil
+}
+
+func LoadKeysFromString(p KeyStrings) (Keys, error) {
+	var keys Keys
+	if p.AccessToken.PrivateKeyString != "" {
+		atSignKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(p.AccessToken.PrivateKeyString))
+		if err != nil {
+			return keys, fmt.Errorf("parse RSAPrivateKey failed with error: %w", err)
+		}
+		keys.AccessToken.PrivateKey = atSignKey
+	}
+
+	if p.RefreshToken.PrivateKeyString != "" {
+		rtSignKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(p.RefreshToken.PrivateKeyString))
+		if err != nil {
+			return keys, fmt.Errorf("parse RSAPrivateKey failed with error: %w", err)
+		}
+		keys.RefreshToken.PrivateKey = rtSignKey
+	}
+
+	if p.AccessToken.PublicKeyString != "" {
+		atSignKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(p.AccessToken.PublicKeyString))
+		if err != nil {
+			return keys, fmt.Errorf("parse RSAPublicKey failed with error: %w", err)
+		}
+		keys.AccessToken.PublicKey = atSignKey
+	}
+
+	if p.RefreshToken.PublicKeyString != "" {
+		rtSignKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(p.RefreshToken.PublicKeyString))
 		if err != nil {
 			return keys, fmt.Errorf("parse RSAPublicKey failed with error: %w", err)
 		}
