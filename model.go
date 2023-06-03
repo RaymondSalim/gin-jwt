@@ -3,11 +3,8 @@ package ssw_go_jwt
 import "github.com/golang-jwt/jwt/v5"
 
 type JWTConfig struct {
-	SigningAlgorithm           string
-	AccessTokenPrivateKeyFile  string
-	AccessTokenPublicKeyFile   string
-	RefreshTokenPrivateKeyFile string
-	RefreshTokenPublicKeyFile  string
+	SigningAlgorithm string
+	Keys
 
 	AccessTokenMaxAge  uint32
 	RefreshTokenMaxAge uint32
