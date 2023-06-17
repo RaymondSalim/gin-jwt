@@ -1058,6 +1058,22 @@ func TestGoJWT_ValidateToken(t *testing.T) {
 				assert.ErrorIs(t, err, jwt.ErrTokenSignatureInvalid)
 			},
 		},
+		{
+			name: "error_invalid_token",
+			Params: Params{
+				signedToken: testString,
+				TokenType:   AccessToken,
+			},
+			modify: func(goJWT *sswGoJWT) {
+				goJWT.initialized = true
+				goJWT.signingMethod = jwt.SigningMethodHS256
+
+				goJWT.accessTokenSecret = []byte(secret)
+			},
+			assert: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1189,6 +1205,23 @@ func TestGoJWT_ValidateAccessTokenWithClaims(t *testing.T) {
 			},
 			assert: func(t *testing.T, claims jwt.MapClaims, err error) {
 				assert.ErrorIs(t, err, jwt.ErrTokenSignatureInvalid)
+			},
+		},
+		{
+			name: "error_invalid_token",
+			Params: Params{
+				signedToken: testString,
+				TokenType:   AccessToken,
+			},
+			modify: func(goJWT *sswGoJWT) {
+				goJWT.Config.Issuer = testString
+				goJWT.initialized = true
+				goJWT.signingMethod = jwt.SigningMethodHS256
+
+				goJWT.accessTokenSecret = []byte(secret)
+			},
+			assert: func(t *testing.T, claims jwt.MapClaims, err error) {
+				assert.Error(t, err)
 			},
 		},
 	}

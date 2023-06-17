@@ -235,7 +235,7 @@ func (g *sswGoJWT) ValidateAccessTokenWithClaims(signedToken string, target *jwt
 
 	token, err := jwt.ParseWithClaims(signedToken, &jwt.MapClaims{}, g.getKeyFunc(AccessToken))
 
-	if !token.Valid && !errors.Is(err, jwt.ErrTokenExpired) {
+	if err != nil || !token.Valid {
 		return err
 	}
 
